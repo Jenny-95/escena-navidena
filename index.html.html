@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escena Navideña - Santa y el Árbol</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      background: radial-gradient(circle at 75% 20%, #1b2a4a 0%, #0a1128 55%, #030712 100%);
+      height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .mensaje {
+      position: absolute;
+      top: 25px;
+      left: 30px;
+      color: #fff;
+      text-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+      pointer-events: none;
+    }
+
+    .mensaje h1 {
+      font-size: 2rem;
+      letter-spacing: 1px;
+    }
+
+    .mensaje p {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="mensaje">
+    <h1>¡Feliz Navidad!</h1>
+    <p>Haz clic en cualquier parte para lanzar magia navideña ✨</p>
+  </div>
+  <canvas id="escena"></canvas>
+
+  <script>
+    const canvas = document.getElementById('escena');
+    const ctx = canvas.getContext('2d');
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    // Estrellas de fondo
+    const estrellas = Array.from({ length: 120 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height * 0.75,
+      r: Math.random() * 1.8 + 0.4,
+      alpha: Math.random(),
+      vel: Math.random() * 0.02 + 0.005
+    }));
+
+    // Copos de nieve
+    const nieve = Array.from({ length: 150 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: Math.random() * 3 + 1,
+      vx: Math.random() * 1 - 0.5,
+      vy: Math.random() * 1.5 + 0.7
+    }));
+
+    // Partículas mágicas del trineo
+    const chispas = [];
+
+    // Posición de Santa y los renos
+    let santaX = -350;
+    let tiempo = 0;
+
+    // Luces del árbol
+    const coloresLuces = ['#ff3b3b', '#ffdd00', '#00f5d4', '#ff66c4', '#38b6ff', '#ffffff'];
+
+    canvas.addEventListener('click', (e) => {
+      for (let i = 0; i < 30; i++) {
+        chispas.push({
+          x: e.clientX,
+          y: e.clientY,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          vida: 60,
+          color: coloresLuces[Math.floor(Math.random() * coloresLuces.length)]
+        });
+      }
+    });
+
+    function dibujarLuna() {
+      const lunaX = width * 0.8;
+      const lunaY = height * 0.18;
+      const grad = ctx.createRadialGradient(lunaX, lunaY, 10, lunaX, lunaY, 90);
+      grad.addColorStop(0, 'rgba(255, 253, 230, 1)');
+      grad.addColorStop(0.4, 'rgba(255, 250, 205, 0.6)');
+      grad.addColorStop(1, 'rgba(255, 250, 205, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(lunaX, lunaY, 90, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fffbe6';
+      ctx.beginPath();
+      ctx.arc(lunaX, lunaY, 38, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function dibujarSueloYMontanas() {
+      // Montañas lejanas
+      ctx.fillStyle = '#0f1c3a';
+      ctx.beginPath();
+      ctx.moveTo(0, height * 0.82);
+      ctx.lineTo(width * 0.25, height * 0.62);
+      ctx.lineTo(width * 0.52, height * 0.82);
+      ctx.lineTo(width * 0.78, height * 0.58);
+      ctx.lineTo(width, height * 0.8);
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+      ctx.fill();
+
+      // Suelo nevado
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.moveTo(0, height * 0.84);
+      ctx.quadraticCurveTo(width * 0.5, height * 0.78, width, height * 0.85);
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function dibujarArbol(x, baseY) {
+      // Tronco
+      ctx.fillStyle = '#5c3a21';
+      ctx.fillRect(x - 18, baseY - 45, 36, 50);
+
+      // Capas del pino
+      const niveles = [
+        { y: baseY - 40, ancho: 130, alto: 100 },
+        { y: baseY - 105, ancho: 105, alto: 90 },
+        { y: baseY - 165, ancho: 80, alto: 80 },
+        { y: baseY - 220, ancho: 55, alto: 70 }
+      ];
+
+      niveles.forEach((n) => {
+        ctx.fillStyle = '#0b4f26';
+        ctx.beginPath();
+        ctx.moveTo(x, n.y - n.alto);
+        ctx.lineTo(x - n.ancho, n.y);
+        ctx.lineTo(x + n.ancho, n.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Nieve en los bordes de las ramas
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      });
+
+      // Estrella en la punta
+      const puntaY = baseY - 295;
+      ctx.save();
+      ctx.translate(x, puntaY);
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        ctx.lineTo(Math.cos(((18 + i * 72) * Math.PI) / 180) * 18, -Math.sin(((18 + i * 72) * Math.PI) / 180) * 18);
+        ctx.lineTo(Math.cos(((54 + i * 72) * Math.PI) / 180) * 7, -Math.sin(((54 + i * 72) * Math.PI) / 180) * 7);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Luces parpadeantes en el árbol
+      const totalLuces = 32;
+      for (let i = 0; i < totalLuces; i++) {
+        const progreso = i / totalLuces;
+        const ly = baseY - 55 - progreso * 215;
+        const maxRadio = (1 - progreso) * 105 + 10;
+        const lx = x + Math.sin(i * 2.4) * maxRadio * 0.85;
+        const color = coloresLuces[(i + Math.floor(tiempo * 4)) % coloresLuces.length];
+
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function dibujarReno(x, y, esRodolfo, paso) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Patas animadas
+      ctx.strokeStyle = '#5c3a21';
+      ctx.lineWidth = 3;
+      const mov = Math.sin(paso) * 8;
+      ctx.beginPath();
+      ctx.moveTo(-10, 8);
+      ctx.lineTo(-14 - mov, 22);
+      ctx.moveTo(10, 8);
+      ctx.lineTo(14 + mov, 22);
+      ctx.stroke();
+
+      // Cuerpo
+      ctx.fillStyle = '#8d5524';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cuello y cabeza
+      ctx.beginPath();
+      ctx.ellipse(16, -10, 8, 6, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cuernos
+      ctx.strokeStyle = '#d4a373';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(14, -15);
+      ctx.lineTo(10, -26);
+      ctx.moveTo(12, -21);
+      ctx.lineTo(17, -24);
+      ctx.stroke();
+
+      // Nariz (roja brillante si es Rodolfo)
+      ctx.fillStyle = esRodolfo ? '#ff1e1e' : '#2b1b17';
+      if (esRodolfo) {
+        ctx.shadowColor = '#ff1e1e';
+        ctx.shadowBlur = 15;
+      }
+      ctx.beginPath();
+      ctx.arc(24, -10, esRodolfo ? 3.5 : 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function dibujarSantaYTrineo(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Patines dorados del trineo
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(-45, 22);
+      ctx.lineTo(45, 22);
+      ctx.quadraticCurveTo(60, 22, 62, 10);
+      ctx.stroke();
+
+      // Cuerpo del trineo
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.moveTo(-40, 18);
+      ctx.lineTo(40, 18);
+      ctx.lineTo(50, -5);
+      ctx.lineTo(15, -5);
+      ctx.lineTo(5, 5);
+      ctx.lineTo(-35, -12);
+      ctx.closePath();
+      ctx.fill();
+
+      // Borde dorado
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Saco de regalos
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(-22, -8, 15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Santa Claus
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(5, -8, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cabeza y barba
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath();
+      ctx.arc(8, -22, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(10, -19, 6, 0, Math.PI);
+      ctx.fill();
+
+      // Gorro de Santa
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(2, -26);
+      ctx.lineTo(14, -26);
+      ctx.lineTo(4, -36);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(3, -36, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // Riendas hacia los renos
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 45, y + 2);
+      ctx.lineTo(x + 250, y - 8);
+      ctx.stroke();
+
+      // 4 Renos tirando del trineo
+      for (let i = 0; i < 4; i++) {
+        const renoX = x + 95 + i * 52;
+        const renoY = y + Math.sin(tiempo * 5 + i) * 6;
+        dibujarReno(renoX, renoY, i === 3, tiempo * 10 + i);
+      }
+    }
+
+    function animar() {
+      tiempo += 0.02;
+      ctx.clearRect(0, 0, width, height);
+
+      // Estrellas
+      estrellas.forEach((e) => {
+        e.alpha += e.vel;
+        if (e.alpha > 1 || e.alpha < 0.2) e.vel *= -1;
+        ctx.fillStyle = `rgba(255, 255, 255, ${e.alpha})`;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      dibujarLuna();
+      dibujarSueloYMontanas();
+
+      // Árbol de Navidad a la derecha
+      dibujarArbol(width * 0.72, height * 0.86);
+
+      // Movimiento de Santa y sus renos
+      santaX += 2.6;
+      const santaY = height * 0.28 + Math.sin(tiempo * 2) * 20;
+
+      // Estela mágica detrás del trineo
+      chispas.push({
+        x: santaX - 40,
+        y: santaY + 12 + (Math.random() - 0.5) * 12,
+        vx: -Math.random() * 2,
+        vy: (Math.random() - 0.5) * 1.5,
+        vida: 45,
+        color: '#ffd700'
+      });
+
+      if (santaX > width + 150) {
+        santaX = -350;
+      }
+
+      dibujarSantaYTrineo(santaX, santaY);
+
+      // Actualizar y dibujar chispas mágicas
+      for (let i = chispas.length - 1; i >= 0; i--) {
+        const c = chispas[i];
+        c.x += c.vx;
+        c.y += c.vy;
+        c.vida--;
+
+        ctx.fillStyle = c.color;
+        ctx.globalAlpha = Math.max(c.vida / 60, 0);
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        if (c.vida <= 0) chispas.splice(i, 1);
+      }
+
+      // Nieve cayendo
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      nieve.forEach((copo) => {
+        copo.x += copo.vx;
+        copo.y += copo.vy;
+
+        if (copo.y > height) {
+          copo.y = -5;
+          copo.x = Math.random() * width;
+        }
+        if (copo.x > width) copo.x = 0;
+        if (copo.x < 0) copo.x = width;
+
+        ctx.beginPath();
+        ctx.arc(copo.x, copo.y, copo.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      requestAnimationFrame(animar);
+    }
+
+    animar();
+  </script>
+</body>
+</html>
